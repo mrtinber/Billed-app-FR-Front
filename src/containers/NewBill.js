@@ -17,7 +17,31 @@ export default class NewBill {
   }
   handleChangeFile = e => {
     e.preventDefault()
-    const file = this.document.querySelector(`input[data-testid="file"]`).files[0]
+    const fileInput = this.document.querySelector(`input[data-testid="file"]`);
+    const file = fileInput.files[0];
+
+    // Créez un élément div pour le message d'erreur
+    const errorMsgDiv = document.createElement('div');
+    errorMsgDiv.classList.add('invalid-feedback', 'd-block');
+    errorMsgDiv.setAttribute('role', 'alert');
+    errorMsgDiv.textContent = "Seuls les fichiers JPG, JPEG et PNG sont autorisés.";
+
+    // Vérifier le type de fichier
+    if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+      console.error("Seuls les fichiers JPG, JPEG et PNG sont autorisés.");
+      fileInput.value = "";
+      // Ajoutez le message d'erreur après l'input
+      fileInput.insertAdjacentElement('afterend', errorMsgDiv);
+      return;
+    } else {
+      // Si le fichier est valide, supprimez le message d'erreur s'il existe
+      const existingErrorMsg = fileInput.nextElementSibling;
+      console.log(existingErrorMsg);
+      if (existingErrorMsg && existingErrorMsg.classList.contains('invalid-feedback')) {
+        existingErrorMsg.remove();
+      }
+    }
+
     const filePath = e.target.value.split(/\\/g)
     const fileName = filePath[filePath.length-1]
     const formData = new FormData()
