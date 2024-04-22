@@ -86,6 +86,9 @@ export default class {
   }
 
   handleEditTicket(e, bill, bills) {
+    console.log("je clique sur", bill); 
+    console.log("debut thiscounter", this.counter);
+
     if (this.counter === undefined || this.id !== bill.id) this.counter = 0
     if (this.id === undefined || this.id !== bill.id) this.id = bill.id
     if (this.counter % 2 === 0) {
@@ -108,6 +111,7 @@ export default class {
     $('#icon-eye-d').click(this.handleClickIconEye)
     $('#btn-accept-bill').click((e) => this.handleAcceptSubmit(e, bill))
     $('#btn-refuse-bill').click((e) => this.handleRefuseSubmit(e, bill))
+    console.log("end thiscounter", this.counter);
   }
 
   handleAcceptSubmit = (e, bill) => {
@@ -131,20 +135,27 @@ export default class {
   }
 
   handleShowTickets(e, bills, index) {
+  
+    // Nettoyage des gestionnaires d'événements associés aux factures du menu précédent
+    bills.forEach(bill => {
+      $(`#open-bill${bill.id}`).off('click');
+    });
+
     if (this.counter === undefined || this.index !== index) this.counter = 0
     if (this.index === undefined || this.index !== index) this.index = index
     if (this.counter % 2 === 0) {
       $(`#arrow-icon${this.index}`).css({ transform: 'rotate(0deg)'})
       $(`#status-bills-container${this.index}`)
         .html(cards(filteredBills(bills, getStatus(this.index))))
-      this.counter ++
     } else {
       $(`#arrow-icon${this.index}`).css({ transform: 'rotate(90deg)'})
       $(`#status-bills-container${this.index}`)
         .html("")
-      this.counter ++
     }
 
+    this.counter ++
+
+    // Ajout des écouteurs d'évènements pour chaque facture 
     bills.forEach(bill => {
       $(`#open-bill${bill.id}`).click((e) => this.handleEditTicket(e, bill, bills))
     })

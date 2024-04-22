@@ -32,11 +32,9 @@ export default class NewBill {
       fileInput.value = "";
       // Ajoutez le message d'erreur après l'input
       fileInput.insertAdjacentElement('afterend', errorMsgDiv);
-      return;
     } else {
       // Si le fichier est valide, supprimez le message d'erreur s'il existe
       const existingErrorMsg = fileInput.nextElementSibling;
-      console.log(existingErrorMsg);
       if (existingErrorMsg && existingErrorMsg.classList.contains('invalid-feedback')) {
         existingErrorMsg.remove();
       }
