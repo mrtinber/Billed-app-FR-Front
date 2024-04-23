@@ -5,7 +5,7 @@
 import {screen, waitFor, fireEvent} from "@testing-library/dom"
 import BillsUI from "../views/BillsUI.js"
 import { bills } from "../fixtures/bills.js"
-import { ROUTES_PATH} from "../constants/routes.js";
+import { ROUTES_PATH } from "../constants/routes"
 import {localStorageMock} from "../__mocks__/localStorage.js";
 import mockStore from "../__mocks__/store"
 import Bills from "../containers/Bills.js";
@@ -57,23 +57,26 @@ describe("Given I am connected as an employee", () => {
     });
 
     test("Then NewBill page should be displayed when buttonNewBill is clicked", async () => {
-      const bills = new Bills({ document, onNavigate, mockStore, localStorageMock });
-      bills.handleClickNewBill = jest.fn();
+      const mockOnNavigate = jest.fn();
+      const bills = new Bills({ document, onNavigate: mockOnNavigate, mockStore, localStorageMock });
     
+      // Rechercher et cliquer sur le bouton
       await waitFor(() => screen.getAllByTestId('btn-new-bill'));
       const newBillBtns = screen.getAllByTestId('btn-new-bill');
     
       newBillBtns.forEach(btn => {
         fireEvent.click(btn); 
-        expect(bills.handleClickNewBill).toHaveBeenCalled();
+        // Vérifier si onNavigate a été appelée avec la bonne route
+        expect(mockOnNavigate).toHaveBeenCalledWith(ROUTES_PATH['NewBill']);
       });
-
+    
       // Attendre que le formulaire soit affiché
       await waitFor(() => screen.getByTestId('form-new-bill'));
       const newBillForm = screen.getByTestId('form-new-bill');
       expect(newBillForm).toBeTruthy();
     });
-
+    
+    // Test d'intégration GET
     test("Then it should fetch bills from mock API GET", async () => {
       await waitFor(() => screen.getAllByText('Mes notes de frais'));
       const contentTitle  = screen.getAllByText('Mes notes de frais')
