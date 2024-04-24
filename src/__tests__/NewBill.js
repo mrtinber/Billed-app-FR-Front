@@ -9,15 +9,23 @@ import { ROUTES_PATH } from "../constants/routes.js";
 import { localStorageMock } from "../__mocks__/localStorage.js";
 import '@testing-library/jest-dom/extend-expect';
 import router from "../app/Router.js";
+import { bills } from "../fixtures/bills.js";
+import BillsUI from "../views/BillsUI.js";
 
 const onNavigateMock = jest.fn();
+const mockStore = {
+  bills: () => ({
+    create: jest.fn().mockResolvedValue({ fileUrl: 'test_file_url', key: 'test_key' }),
+    update: jest.fn().mockResolvedValue(),
+  }),
+};
 
 const addedBill = {
   "id": "47qAXb6fIm2zOKkLzMro",
   "vat": "80",
   "fileUrl": "https://test.storage.tld/v0/b/billable-677b6.a…f-1.jpg?alt=media&token=c1640e12-a24b-4b11-ae52-529112e9602a",
   "status": "accepted",
-  "type": "Hôtel et logement",
+  "type": "Capsule Hotel",
   "commentAdmin": "ok",
   "commentary": "séminaire billed",
   "name": "encore",
@@ -125,56 +133,59 @@ describe("Given I am connected as an employee", () => {
         expect(errorMsg).not.toBeInTheDocument();
       });
     });
-    // test("Then the submit button should bring you back to the Bills page if the form is filled", async () => {
-    //   await waitFor(() => screen.getByTestId('form-new-bill'));
-    //   const newBillForm = screen.getByTestId('form-new-bill');
-    //   expect(newBillForm).toBeTruthy();
+
+    test("Then the submit button should bring you back to the Bills page if the form is filled", async () => {
+      const newBillInstance = new NewBill({
+        document,
+        onNavigate: onNavigateMock,
+        store: mockStore,
+        localStorage: localStorageMock,
+      });
+
+      await waitFor(() => screen.getByTestId('form-new-bill'));
+      const newBillForm = screen.getByTestId('form-new-bill');
+      expect(newBillForm).toBeTruthy();
     
-    //   // Remplir le formulaire avec des données valides
-    //   fireEvent.change(screen.getByTestId('expense-type'), { target: { value: addedBill.type } });
-    //   fireEvent.change(screen.getByTestId('expense-name'), { target: { value: addedBill.name } });
-    //   fireEvent.change(screen.getByTestId('amount'), { target: { value: addedBill.amount.toString() } });
-    //   fireEvent.change(screen.getByTestId('datepicker'), { target: { value: addedBill.date } });
-    //   fireEvent.change(screen.getByTestId('vat'), { target: { value: addedBill.vat } });
-    //   fireEvent.change(screen.getByTestId('pct'), { target: { value: addedBill.pct.toString() } });
-    //   fireEvent.change(screen.getByTestId('commentary'), { target: { value: addedBill.commentary } });
-    //   fireEvent.change(screen.getByTestId('file'), {
-    //     target: { files: [new File([""], "file.png", { type: "image/png" })] }
-    //   });
+      // Remplir le formulaire avec des données valides
+      fireEvent.change(screen.getByTestId('expense-type'), { target: { value: addedBill.type } });
+      fireEvent.change(screen.getByTestId('expense-name'), { target: { value: addedBill.name } });
+      fireEvent.change(screen.getByTestId('amount'), { target: { value: addedBill.amount.toString() } });
+      fireEvent.change(screen.getByTestId('datepicker'), { target: { value: addedBill.date } });
+      fireEvent.change(screen.getByTestId('vat'), { target: { value: addedBill.vat } });
+      fireEvent.change(screen.getByTestId('pct'), { target: { value: addedBill.pct.toString() } });
+      fireEvent.change(screen.getByTestId('commentary'), { target: { value: addedBill.commentary } });
+      fireEvent.change(screen.getByTestId('file'), {
+        target: { files: [new File([""], "file.png", { type: "image/png" })] }
+      });
     
-    //   // Définir un drapeau pour indiquer si la redirection a été effectuée
-    //   let redirected = false;
-    //   const handleSubmitMock = jest.fn((e) => {
-    //     e.preventDefault();
-    //     redirected = true; // Marquer que la redirection a été effectuée
-    //     onNavigateMock(ROUTES_PATH['Bills']);
-    //   });
+      const handleSubmitMock = jest.fn((e) => {
+        e.preventDefault();
+        onNavigateMock(ROUTES_PATH['Bills']);
+        bills.push(addedBill); // on veut que bills soit mis à jour avec addedbill
+      });
+      newBillForm.addEventListener("submit", handleSubmitMock);
+      fireEvent.submit(newBillForm);
+
+      // // Vous pouvez vérifier si la méthode update du store a été appelée avec les données de facture attendues
+      // expect(mockStore.bills().update).toHaveBeenCalledWith({
+      //   data: JSON.stringify(addedBill),
+      //   selector: newBillInstance.billId,
+      // });
+
+      Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+      window.localStorage.setItem('user', JSON.stringify({ type: 'Employee' }));
+      const root = document.createElement("div");
+      root.setAttribute("id", "root");
+      document.body.append(root);
+      router();
+      window.onNavigate(ROUTES_PATH.Bills);
+
+      document.body.innerHTML = BillsUI({ data: bills })
     
-    //   // Ajouter l'écouteur d'événement de soumission avec la fonction mock
-    //   newBillForm.addEventListener("submit", handleSubmitMock);
-    
-    //   // Soumettre le formulaire
-    //   fireEvent.submit(newBillForm);
-    
-    //   // Attendre que la redirection soit effectuée
-    //   await waitFor(() => {
-    //     expect(handleSubmitMock).toHaveBeenCalled();
-    //     expect(onNavigateMock).toHaveBeenCalledWith(ROUTES_PATH['Bills']);
-    //     expect(redirected).toBe(true); // Vérifier que la redirection a été effectuée
-    //   });
-    
-    //   // Effectuer les actions après la redirection
-    //   // Par exemple, naviguer vers la page des factures et vérifier sa présence
-    //   Object.defineProperty(window, 'localStorage', { value: localStorageMock });
-    //   window.localStorage.setItem('user', JSON.stringify({ type: 'Employee' }));
-    //   const root = document.createElement("div");
-    //   root.setAttribute("id", "root");
-    //   document.body.append(root);
-    //   router();
-    //   window.onNavigate(ROUTES_PATH.Bills);
-    
-    //   const newBillTable = screen.getByTestId('tbody');
-    //   expect(newBillTable).toBeInTheDocument();
-    // });
+      await waitFor(() => screen.getByTestId("bills-content-title"))
+      const newBillTable = screen.getByTestId('tbody');
+      expect(newBillTable).toBeTruthy();
+      expect(newBillTable.innerHTML).toContain(addedBill.type);
+    });
   })
 })
