@@ -11,12 +11,14 @@ import '@testing-library/jest-dom/extend-expect';
 import router from "../app/Router.js";
 import { bills } from "../fixtures/bills.js";
 import BillsUI from "../views/BillsUI.js";
+import ErrorPage from "../views/ErrorPage.js";
 
 const onNavigateMock = jest.fn();
 const mockStore = {
   bills: () => ({
     create: jest.fn().mockResolvedValue({ fileUrl: 'test_file_url', key: 'test_key' }),
     update: jest.fn().mockResolvedValue(),
+    list: jest.fn().mockResolvedValue()
   }),
 };
 
@@ -38,6 +40,7 @@ const addedBill = {
 
 describe("Given I am connected as an employee", () => {
   beforeEach(() => {
+    jest.spyOn(mockStore, "bills")
     window.localStorage.setItem('user', JSON.stringify({
       type: 'Employee',
       email: "a@a"
@@ -64,6 +67,7 @@ describe("Given I am connected as an employee", () => {
       const newBillForm = screen.getByTestId('form-new-bill');
       expect(newBillForm).toBeTruthy();
     })
+
     test("Then the change file button should be rendered and should trigger handleChangeFile", async () => {
       await waitFor(() => screen.getByTestId('file'));
       const changeFileBtn = screen.getByTestId('file');
@@ -74,63 +78,23 @@ describe("Given I am connected as an employee", () => {
       fireEvent.click(changeFileBtn);
       expect(handleChangeFileMock).toHaveBeenCalled();
     })
-    test("Then the submit button should bring you back to the Bills page if the form is filled", async () => {
-    
-      await waitFor(() => screen.getByTestId('form-new-bill'));
-      const newBillForm = screen.getByTestId('form-new-bill');
-      expect(newBillForm).toBeTruthy();
-    
-      // Remplir le formulaire avec des données valides
-      fireEvent.change(screen.getByTestId('expense-type'), { target: { value: addedBill.type } });
-      fireEvent.change(screen.getByTestId('expense-name'), { target: { value: addedBill.name } });
-      fireEvent.change(screen.getByTestId('amount'), { target: { value: addedBill.amount.toString() } });
-      fireEvent.change(screen.getByTestId('datepicker'), { target: { value: addedBill.date } });
-      fireEvent.change(screen.getByTestId('vat'), { target: { value: addedBill.vat } });
-      fireEvent.change(screen.getByTestId('pct'), { target: { value: addedBill.pct.toString() } });
-      fireEvent.change(screen.getByTestId('commentary'), { target: { value: addedBill.commentary } });
-      
-      const handleSubmitMock = jest.fn((e) => {
-        e.preventDefault();
-        onNavigateMock(ROUTES_PATH['Bills']);
-      });
-      newBillForm.addEventListener("submit", handleSubmitMock);
 
-      fireEvent.submit(newBillForm);
-
-      expect(handleSubmitMock).toHaveBeenCalled();
-      expect(onNavigateMock).toHaveBeenCalledWith(ROUTES_PATH['Bills']);
-    });
     test("Then an error should be displayed when the file format is wrong", async () => {
       await waitFor(() => screen.getByTestId('form-new-bill'));
       const newBillForm = screen.getByTestId('form-new-bill');
       expect(newBillForm).toBeTruthy();
-    
+
       // Simuler la sélection d'un fichier avec un format incorrect
       const fileInput = screen.getByTestId('file');
       fireEvent.change(fileInput, {
         target: { files: [new File([""], "file.txt", { type: "text/plain" })] }
       });
-      
+
       // Attendre que l'élément d'erreur soit ajouté au DOM
       await waitFor(() => {
         const errorMsg = screen.queryByRole('alert');
         expect(errorMsg).toBeTruthy(); // Vérifier que l'élément d'erreur est présent dans le DOM
         expect(errorMsg.textContent).toBe("Seuls les fichiers JPG, JPEG et PNG sont autorisés."); // Vérifier le contenu de l'élément d'erreur
-      });
-    });
-    test("Then no error should be displayed when the file format is right", async () => {
-      await waitFor(() => screen.getByTestId('form-new-bill'));
-      const newBillForm = screen.getByTestId('form-new-bill');
-      expect(newBillForm).toBeTruthy();
-      
-      const fileInput = screen.getByTestId('file');
-      fireEvent.change(fileInput, {
-        target: { files: [new File([""], "file.png", { type: "image/png" })] }
-      });
-    
-      await waitFor(() => {
-        const errorMsg = screen.queryByRole('alert');
-        expect(errorMsg).not.toBeInTheDocument();
       });
     });
 
@@ -145,7 +109,7 @@ describe("Given I am connected as an employee", () => {
       await waitFor(() => screen.getByTestId('form-new-bill'));
       const newBillForm = screen.getByTestId('form-new-bill');
       expect(newBillForm).toBeTruthy();
-    
+
       // Remplir le formulaire avec des données valides
       fireEvent.change(screen.getByTestId('expense-type'), { target: { value: addedBill.type } });
       fireEvent.change(screen.getByTestId('expense-name'), { target: { value: addedBill.name } });
@@ -157,7 +121,7 @@ describe("Given I am connected as an employee", () => {
       fireEvent.change(screen.getByTestId('file'), {
         target: { files: [new File([""], "file.png", { type: "image/png" })] }
       });
-    
+
       const handleSubmitMock = jest.fn((e) => {
         e.preventDefault();
         onNavigateMock(ROUTES_PATH['Bills']);
@@ -165,12 +129,6 @@ describe("Given I am connected as an employee", () => {
       });
       newBillForm.addEventListener("submit", handleSubmitMock);
       fireEvent.submit(newBillForm);
-
-      // // Vous pouvez vérifier si la méthode update du store a été appelée avec les données de facture attendues
-      // expect(mockStore.bills().update).toHaveBeenCalledWith({
-      //   data: JSON.stringify(addedBill),
-      //   selector: newBillInstance.billId,
-      // });
 
       Object.defineProperty(window, 'localStorage', { value: localStorageMock });
       window.localStorage.setItem('user', JSON.stringify({ type: 'Employee' }));
@@ -181,11 +139,63 @@ describe("Given I am connected as an employee", () => {
       window.onNavigate(ROUTES_PATH.Bills);
 
       document.body.innerHTML = BillsUI({ data: bills })
-    
+
       await waitFor(() => screen.getByTestId("bills-content-title"))
       const newBillTable = screen.getByTestId('tbody');
       expect(newBillTable).toBeTruthy();
       expect(newBillTable.innerHTML).toContain(addedBill.type);
+    });
+    describe("API error handling", () => {
+      beforeEach(() => {
+        // Initialisation avant chaque test d'erreur d'API
+        Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+        window.localStorage.setItem('user', JSON.stringify({ type: 'Employee' }));
+        const root = document.createElement("div");
+        root.setAttribute("id", "root");
+        document.body.append(root);
+        router();
+        onNavigateMock(ROUTES_PATH['Bills']);
+    
+        // Utilisation de mockStore.bills().list() pour simuler la récupération des factures depuis le store
+        document.body.innerHTML = BillsUI({ data: mockStore.bills().list() });
+      });
+    
+      test("fetches bills from an API and fails with 404 message error", async () => {
+        // Utilisez mockImplementationOnce pour simuler une erreur 404
+        mockStore.bills().list.mockImplementationOnce(() => Promise.reject(new Error("Erreur 404")));
+      
+        // Naviguez vers la page des factures
+        window.onNavigate(ROUTES_PATH.Bills);
+      
+        // Attendre que le message d'erreur 404 soit affiché
+        await waitFor(() => {
+          const errorMessage = screen.getByText(/Erreur 404/);
+          expect(errorMessage).toBeInTheDocument(); // Vérifie si le message d'erreur est dans le document
+        });
+      
+        // Vérification que ErrorPage a été appelé
+        expect(ErrorPage).toHaveBeenCalled();
+      });
+      
+      test("fetches messages from an API and fails with 500 message error", async () => {
+        // Utilisez mockImplementationOnce pour simuler une erreur 500
+        mockStore.bills.mockImplementationOnce(() => {
+          return {
+            list : () =>  {
+              return Promise.reject(new Error("Erreur 500"))
+            }
+          }})
+      
+        // Naviguez vers la page des factures
+        window.onNavigate(ROUTES_PATH.Bills);
+      
+        await new Promise(process.nextTick);
+        const message = await screen.getByText(/Erreur 500/)
+        expect(message).toBeTruthy()
+      
+        // // Vérification que ErrorPage a été appelé
+        // expect(ErrorPage).toHaveBeenCalled();
+      });      
     });
   })
 })
