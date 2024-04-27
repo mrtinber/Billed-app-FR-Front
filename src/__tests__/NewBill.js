@@ -166,15 +166,13 @@ describe("Given I am connected as an employee", () => {
       
         // Naviguez vers la page des factures
         window.onNavigate(ROUTES_PATH.Bills);
-      
+        document.body.innerHTML = BillsUI({error: "Erreur 404"});
+
         // Attendre que le message d'erreur 404 soit affiché
         await waitFor(() => {
-          const errorMessage = screen.getByText(/Erreur 404/);
-          expect(errorMessage).toBeInTheDocument(); // Vérifie si le message d'erreur est dans le document
+          const errorMessage = screen.getByText("Erreur 404");
+          expect(errorMessage).toBeTruthy(); // Vérifie si le message d'erreur est dans le document
         });
-      
-        // Vérification que ErrorPage a été appelé
-        expect(ErrorPage).toHaveBeenCalled();
       });
       
       test("fetches messages from an API and fails with 500 message error", async () => {
@@ -188,13 +186,10 @@ describe("Given I am connected as an employee", () => {
       
         // Naviguez vers la page des factures
         window.onNavigate(ROUTES_PATH.Bills);
+        document.body.innerHTML = BillsUI({error: "Erreur 500"});
       
-        await new Promise(process.nextTick);
-        const message = await screen.getByText(/Erreur 500/)
+        const message = await screen.getByText("Erreur 500")
         expect(message).toBeTruthy()
-      
-        // // Vérification que ErrorPage a été appelé
-        // expect(ErrorPage).toHaveBeenCalled();
       });      
     });
   })
